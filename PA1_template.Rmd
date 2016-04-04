@@ -1,4 +1,78 @@
 ---
+<<<<<<< HEAD
+title: "PA1_template"
+output: html_document
+---
+```{r steps, echo=TRUE}
+library(plyr)
+library(dplyr)
+library(knitr)
+library(ggplot2)
+
+#remove missing values
+#tapply aggregate to sum over date
+file = read.csv("./activity.csv", header=TRUE)
+file$date <- as.Date(file$date)
+new_file <- file[complete.cases(file), ]
+dailySteps <- tapply(new_file$steps, new_file$date, sum, na.rm=TRUE)
+
+special <- unique(dailySteps)
+hist(special, 25, main="Steps per Day")
+avgDailySteps <- mean(special)
+medDailySteps <- median(special)
+
+activity<-tapply(new_file$steps, new_file$interval, mean)
+plot(y = activity, x = names(activity), type = "l", xlab = "Every 5 minutes", main = "Daily Activity", ylab = "Avg Steps")
+truth_table <- activity==max(activity)
+activity[truth_table]
+
+#of NA's
+dim(file)[1] - dim(new_file)[1]
+
+#replace NA's -> be careful....daily is aggregated!!
+file$steps[which(is.na(file$steps))] <- mean(file$steps, na.rm=T)
+sum(is.na(file))
+
+#draw after replace
+new_dailySteps <- tapply(file$steps, file$date, sum)
+hist(new_dailySteps, 25, main="Steps per Day")
+
+# weekends vs weekdays
+weekday <- file[!(weekdays(file$date) %in% c('Saturday', 'Sunday')),]
+weekend <- file[weekdays(file$date) %in% c('Saturday', 'Sunday'),]
+
+wd_activity <- tapply(weekday$steps, weekday$interval, mean)
+we_activity <- tapply(weekend$steps, weekend$interval, mean)
+par(mfrow=c(2,1))
+plot(wd_activity, type="l", main="Weekdays", xlab="5min Intervals", ylab="Avg Steps")
+plot(we_activity, type="l", main="Weekends", xlab="5min Intervals", ylab="Avg Steps")
+
+```
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+=======
 title: "Reproducible Research: Peer Assessment 1"
 output: 
   html_document:
@@ -23,3 +97,4 @@ output:
 
 
 ## Are there differences in activity patterns between weekdays and weekends?
+>>>>>>> 80edf39c3bb508fee88e3394542f967dd3fd3270
