@@ -1,77 +1,101 @@
 ---
-title: "PA1_template.Rmd"
+title: "New Template JC"
 author: "John Corley"
-date: "April 3, 2016"
+date: "April 7, 2016"
 output: html_document
 ---
-
-```{r setup, include=FALSE}
+# Loading and preprocessing the data
+```{r setup, include=TRUE}
 knitr::opts_chunk$set(echo = TRUE)
-```
 
-## R Markdown
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
-```{r cars}
-summary(cars)
-```
-
-## Including Plots
-
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
-```
-
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
-```{r, echo=TRUE}
-library(plyr)
-library(dplyr)
-library(knitr)
-library(ggplot2)
-
-#remove missing values
-#tapply aggregate to sum over date
+### Load the data (i.e. read.csv())
 file = read.csv("./activity.csv", header=TRUE)
+str(file)
+
+###Process/transform the data (if necessary) into a format suitable for your analysis
 file$date <- as.Date(file$date)
-new_file <- file[complete.cases(file), ]
-dailySteps <- tapply(new_file$steps, new_file$date, sum, na.rm=TRUE)
 
-special <- unique(dailySteps)
-hist(special, 25, main="Steps per Day")
-avgDailySteps <- mean(special)
-medDailySteps <- median(special)
+```
+# What is mean total number of steps taken per day?
+```{r , echo=TRUE}
+knitr::opts_chunk$set(echo = TRUE)
 
-activity<-tapply(new_file$steps, new_file$interval, mean)
-plot(y = activity, x = names(activity), type = "l", xlab = "Every 5 minutes", main = "Daily Activity", ylab = "Avg Steps")
-truth_table <- activity==max(activity)
-activity[truth_table]
+### Calculate the total number of steps taken per day
+dailySteps <- tapply(file$steps, file$date, sum, na.rm=TRUE)
+str(dailySteps)
+```
+### Make a histogram of the total number of steps taken each day
+``` {r, echo=TRUE}
 
-#of NA's
-dim(file)[1] - dim(new_file)[1]
+#### Mean number of steps per day
+myMean <- mean(dailySteps)
+#### Median number of steps per day
+myMedian <- median(dailySteps)
 
-#replace NA's -> be careful....daily is aggregated!!
-file$steps[which(is.na(file$steps))] <- mean(file$steps, na.rm=T)
-sum(is.na(file))
+### Histogram, Median and Mean
+hist(dailySteps, 25)
+legend('topright', legend = c(paste("Mean =", round(myMean, 1)),paste("Median =",round(myMedian, 1))), bty = "n")
 
-#draw after replace
-new_dailySteps <- tapply(file$steps, file$date, sum)
-hist(new_dailySteps, 25, main="Steps per Day")
+```
 
+#What is the average daily activity pattern?
+```{r , echo=TRUE}
+
+
+###Time Series Plot
+
+activity<-tapply(file$steps, file$interval, mean, na.rm=T)
+plot(y = activity, x = names(activity), type = "l", xlab = "Nth 5 Minute Interval", main = "Daily Activity", ylab = "Avg. Num. Steps")
+
+max_dim <- activity[which.max(activity)]
+first <- round(as.numeric(levels(as.factor(max_dim))), 2)
+second <- names(max_dim)
+legend('topright', legend = c(paste("Time Interval: ", second),paste("Max Avg Steps: ",first)))
+abline(v = as.numeric(names(max_dim)), col = 'red')
+```
+
+#Imputing missing values
+####The total number of missing values is 
+```{r , echo=TRUE}
+sum(is.na(file$steps))
+##which(is.na(file$steps))
+
+```
+Replacing 'NA' values with AVG Values per day, given the appropriate date of the 'NA'...
+```{r , echo=TRUE}
+copy <- file
+copy$steps <- ifelse(is.na(copy$steps) == TRUE, as.numeric(levels(as.factor(activity)))[as.numeric(names(activity)) %in% copy$interval], copy$steps)
+#df1$B <- ifelse(is.na(df1$B) == TRUE, df2$B[df2$A %in% df1$A], df1$B) 
+
+```
+
+##Histogram after Removed
+
+```{r , echo=TRUE}
+dailyStepsRm <- tapply(copy$steps, copy$date, sum, na.rm = TRUE)
+
+#### Mean number of steps per day
+myMeanRm <- mean(dailyStepsRm)
+#### Median number of steps per day
+myMedianRm <- median(dailyStepsRm)
+
+hist(dailyStepsRm, 25)
+legend('topright', legend = c(paste("Mean =", round(myMeanRm, 1)),paste("Median =",round(myMedianRm, 1))), bty = "n")
+myMeanRm
+```
 # weekends vs weekdays
-weekday <- file[!(weekdays(file$date) %in% c('Saturday', 'Sunday')),]
-weekend <- file[weekdays(file$date) %in% c('Saturday', 'Sunday'),]
+### you can see a skew for weekdays
+```{r , echo =TRUE}
+
+weekday <- copy[!(weekdays(copy$date) %in% c('Saturday', 'Sunday')),]
+weekend <- copy[weekdays(copy$date) %in% c('Saturday', 'Sunday'),]
 
 wd_activity <- tapply(weekday$steps, weekday$interval, mean)
 we_activity <- tapply(weekend$steps, weekend$interval, mean)
 par(mfrow=c(2,1))
-plot(wd_activity, type="l", main="Weekdays", xlab="5min Intervals", ylab="Avg Steps")
-plot(we_activity, type="l", main="Weekends", xlab="5min Intervals", ylab="Avg Steps")
-
-
+plot(wd_activity, type="l", main="Weekdays", xlab="Nth 5min Interval", ylab="Avg Steps")
+plot(we_activity, type="l", main="Weekends", xlab="Nth 5min Interval", ylab="Avg Steps")
 ```
+
 
