@@ -72,7 +72,8 @@ img {
 <pre class="r"><code>knitr::opts_chunk$set(echo = TRUE)
 
 
-### Load the data (i.e. read.csv())
+### Load the data 
+unzip(&quot;./activity.zip&quot;, &quot;activity.csv&quot;)
 file = read.csv(&quot;./activity.csv&quot;, header=TRUE)
 str(file)</code></pre>
 <pre><code>## 'data.frame':    17568 obs. of  3 variables:

@@ -1,120 +1,113 @@
-R Markdown
-----------
+Loading and preprocessing the data
+==================================
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+    knitr::opts_chunk$set(echo = TRUE)
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
 
-``` r
-summary(cars)
-```
+    ### Load the data 
+    unzip("./activity.zip", "activity.csv")
+    file = read.csv("./activity.csv", header=TRUE)
+    str(file)
 
-    ##      speed           dist       
-    ##  Min.   : 4.0   Min.   :  2.00  
-    ##  1st Qu.:12.0   1st Qu.: 26.00  
-    ##  Median :15.0   Median : 36.00  
-    ##  Mean   :15.4   Mean   : 42.98  
-    ##  3rd Qu.:19.0   3rd Qu.: 56.00  
-    ##  Max.   :25.0   Max.   :120.00
+    ## 'data.frame':    17568 obs. of  3 variables:
+    ##  $ steps   : int  NA NA NA NA NA NA NA NA NA NA ...
+    ##  $ date    : Factor w/ 61 levels "2012-10-01","2012-10-02",..: 1 1 1 1 1 1 1 1 1 1 ...
+    ##  $ interval: int  0 5 10 15 20 25 30 35 40 45 ...
 
-Including Plots
----------------
+    ###Process/transform the data (if necessary) into a format suitable for your analysis
+    file$date <- as.Date(file$date)
 
-You can also embed plots, for example:
+What is mean total number of steps taken per day?
+=================================================
 
-![](PA1_template_files/figure-markdown_github/pressure-1.png)<!-- -->
+    knitr::opts_chunk$set(echo = TRUE)
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+    ### Calculate the total number of steps taken per day
+    dailySteps <- tapply(file$steps, file$date, sum, na.rm=TRUE)
+    str(dailySteps)
 
-``` r
-library(plyr)
-library(dplyr)
-```
+    ##  int [1:61(1d)] 0 126 11352 12116 13294 15420 11015 0 12811 9900 ...
+    ##  - attr(*, "dimnames")=List of 1
+    ##   ..$ : chr [1:61] "2012-10-01" "2012-10-02" "2012-10-03" "2012-10-04" ...
 
-    ## 
-    ## Attaching package: 'dplyr'
+### Make a histogram of the total number of steps taken each day
 
-    ## The following objects are masked from 'package:plyr':
-    ## 
-    ##     arrange, count, desc, failwith, id, mutate, rename, summarise,
-    ##     summarize
+    #### Mean number of steps per day
+    myMean <- mean(dailySteps)
+    #### Median number of steps per day
+    myMedian <- median(dailySteps)
 
-    ## The following objects are masked from 'package:stats':
-    ## 
-    ##     filter, lag
+    ### Histogram, Median and Mean
+    hist(dailySteps, 25)
+    legend('topright', legend = c(paste("Mean =", round(myMean, 1)),paste("Median =",round(myMedian, 1))), bty = "n")
 
-    ## The following objects are masked from 'package:base':
-    ## 
-    ##     intersect, setdiff, setequal, union
+![](PA1_template_files/figure-markdown_strict/unnamed-chunk-2-1.png)<!-- -->
 
-``` r
-library(knitr)
-library(ggplot2)
+What is the average daily activity pattern?
+===========================================
 
-#remove missing values
-#tapply aggregate to sum over date
-file = read.csv("./activity.csv", header=TRUE)
-file$date <- as.Date(file$date)
-new_file <- file[complete.cases(file), ]
-dailySteps <- tapply(new_file$steps, new_file$date, sum, na.rm=TRUE)
+    ###Time Series Plot
 
-special <- unique(dailySteps)
-hist(special, 25, main="Steps per Day")
-```
+    activity<-tapply(file$steps, file$interval, mean, na.rm=T)
+    plot(y = activity, x = names(activity), type = "l", xlab = "Nth 5 Minute Interval", main = "Daily Activity", ylab = "Avg. Num. Steps")
 
-![](PA1_template_files/figure-markdown_github/unnamed-chunk-1-1.png)<!-- -->
+    max_dim <- activity[which.max(activity)]
+    first <- round(as.numeric(levels(as.factor(max_dim))), 2)
+    second <- names(max_dim)
+    legend('topright', legend = c(paste("Time Interval: ", second),paste("Max Avg Steps: ",first)))
+    abline(v = as.numeric(names(max_dim)), col = 'red')
 
-``` r
-avgDailySteps <- mean(special)
-medDailySteps <- median(special)
+![](PA1_template_files/figure-markdown_strict/unnamed-chunk-3-1.png)<!-- -->
 
-activity<-tapply(new_file$steps, new_file$interval, mean)
-plot(y = activity, x = names(activity), type = "l", xlab = "Every 5 minutes", main = "Daily Activity", ylab = "Avg Steps")
-```
+Imputing missing values
+=======================
 
-![](PA1_template_files/figure-markdown_github/unnamed-chunk-1-2.png)<!-- -->
+#### The total number of missing values is
 
-``` r
-truth_table <- activity==max(activity)
-activity[truth_table]
-```
-
-    ##      835 
-    ## 206.1698
-
-``` r
-#of NA's
-dim(file)[1] - dim(new_file)[1]
-```
+    sum(is.na(file$steps))
 
     ## [1] 2304
 
-``` r
-#replace NA's -> be careful....daily is aggregated!!
-file$steps[which(is.na(file$steps))] <- mean(file$steps, na.rm=T)
-sum(is.na(file))
-```
+    ##which(is.na(file$steps))
 
-    ## [1] 0
+Replacing 'NA' values with AVG Values per day, given the appropriate
+date of the 'NA'...
 
-``` r
-#draw after replace
-new_dailySteps <- tapply(file$steps, file$date, sum)
-hist(new_dailySteps, 25, main="Steps per Day")
-```
+    copy <- file
+    copy$steps <- ifelse(is.na(copy$steps) == TRUE, as.numeric(levels(as.factor(activity)))[as.numeric(names(activity)) %in% copy$interval], copy$steps)
+    #df1$B <- ifelse(is.na(df1$B) == TRUE, df2$B[df2$A %in% df1$A], df1$B) 
 
-![](PA1_template_files/figure-markdown_github/unnamed-chunk-1-3.png)<!-- -->
+Histogram after Removed
+-----------------------
 
-``` r
-# weekends vs weekdays
-weekday <- file[!(weekdays(file$date) %in% c('Saturday', 'Sunday')),]
-weekend <- file[weekdays(file$date) %in% c('Saturday', 'Sunday'),]
+    dailyStepsRm <- tapply(copy$steps, copy$date, sum, na.rm = TRUE)
 
-wd_activity <- tapply(weekday$steps, weekday$interval, mean)
-we_activity <- tapply(weekend$steps, weekend$interval, mean)
-par(mfrow=c(2,1))
-plot(wd_activity, type="l", main="Weekdays", xlab="5min Intervals", ylab="Avg Steps")
-plot(we_activity, type="l", main="Weekends", xlab="5min Intervals", ylab="Avg Steps")
-```
+    #### Mean number of steps per day
+    myMeanRm <- mean(dailyStepsRm)
+    #### Median number of steps per day
+    myMedianRm <- median(dailyStepsRm)
 
-![](PA1_template_files/figure-markdown_github/unnamed-chunk-1-4.png)<!-- -->
+    hist(dailyStepsRm, 25)
+    legend('topright', legend = c(paste("Mean =", round(myMeanRm, 1)),paste("Median =",round(myMedianRm, 1))), bty = "n")
+
+![](PA1_template_files/figure-markdown_strict/unnamed-chunk-6-1.png)<!-- -->
+
+    myMeanRm
+
+    ## [1] 10758.71
+
+weekends vs weekdays
+====================
+
+### you can see a skew for weekdays
+
+    weekday <- copy[!(weekdays(copy$date) %in% c('Saturday', 'Sunday')),]
+    weekend <- copy[weekdays(copy$date) %in% c('Saturday', 'Sunday'),]
+
+    wd_activity <- tapply(weekday$steps, weekday$interval, mean)
+    we_activity <- tapply(weekend$steps, weekend$interval, mean)
+    par(mfrow=c(2,1))
+    plot(wd_activity, type="l", main="Weekdays", xlab="Nth 5min Interval", ylab="Avg Steps")
+    plot(we_activity, type="l", main="Weekends", xlab="Nth 5min Interval", ylab="Avg Steps")
+
+![](PA1_template_files/figure-markdown_strict/unnamed-chunk-7-1.png)<!-- -->

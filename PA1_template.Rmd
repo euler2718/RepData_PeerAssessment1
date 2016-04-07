@@ -9,7 +9,8 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 
 
-### Load the data (i.e. read.csv())
+### Load the data 
+unzip("./activity.zip", "activity.csv")
 file = read.csv("./activity.csv", header=TRUE)
 str(file)
 
